@@ -32,6 +32,13 @@ df = pd.read_csv(
     names=["name", "lattitude", "longitude", "elevation"],
     header=None,
 )
+
+df = pd.read_csv(
+    "world_cities_full_info.csv",
+    names=["name", "lattitude", "longitude", "elevation"],
+    header=None,
+)
+
 df.astype({"elevation": int})
 print(df.head())
 
@@ -54,13 +61,16 @@ app.layout = html.Div(
                         ),
                         dcc.Slider(
                             id="rate_slider",
-                            min=0.1,
-                            max=10,
-                            step=0.1,
-                            marks={i: str(i) for i in range(1, 11)},
-                            value=0.1,
+                            min=0.001,
+                            max=5,
+                            step=0.001,
+                            marks={i: str(i) for i in range(1, 6)},
+                            value=0.063,
                         ),
                         dcc.Markdown(id="city_info", children="City:"),
+                        dcc.Markdown(
+                            id="affected_text", children="**Population affected**"
+                        ),
                     ],
                 ),
                 html.Div(
@@ -84,6 +94,13 @@ app.layout = html.Div(
                         dcc.Graph(id="map"),
                     ],
                 ),
+            ],
+        ),
+        html.Div(
+            className="card",
+            children=[
+                dcc.Markdown("**Topographic map of rising sea levels**"),
+                html.Video(id="video", src="/static/Earth_Flooding.mp4", controls=True),
             ],
         ),
     ],
@@ -156,8 +173,8 @@ def update_city_info(year, clickData, rate):
     data = clickData["points"][0]
     sea_level = (int(year) - 2019) * int(rate)
     text = """**City: {}** \n
-    Longitude: {} \n
-    Latitude: {} \n
+    Longitude: {:4f} \n
+    Latitude: {:4f} \n
     Status in {}: {}
     """.format(
         data["text"],
@@ -172,6 +189,17 @@ def update_city_info(year, clickData, rate):
 @app.callback(Output("rate_text", "children"), [Input("rate_slider", "value")])
 def update_rate_text(rate):
     return "Rate of sea level rise: {} m/y".format(rate)
+
+
+# @app.callback(Output("rate_text", "children"), [Input("rate_slider", "value")])
+# def update_rate_text(rate):
+#     return "Rate of sea level rise: {} m/y".format(rate)
+
+
+@server.route("/static/<path:path>")
+def serve_static(path):
+    root_dir = os.getcwd()
+    return flask.send_from_directory(os.path.join(root_dir, "static"), path)
 
 
 if __name__ == "__main__":
