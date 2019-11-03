@@ -33,16 +33,17 @@ df = pd.read_csv(
     header=None,
 )
 
-df = pd.read_csv(
-    "world_cities_full_info.csv",
-    names=["name", "lattitude", "longitude", "elevation"],
-    header=None,
+df2 = pd.read_csv("worldcities too full version without altitude.csv")
+df3 = df.merge(df2, left_on="name", right_on="city_ascii", how="left").dropna(
+    subset=["name"]
 )
+print(df3.head(10))
+df = df3
+df.population = df.population.fillna(1)
 
 df.astype({"elevation": int})
-print(df.head())
 
-# Standard Dash app code below
+
 app.layout = html.Div(
     className="container",
     children=[
@@ -122,7 +123,9 @@ def update_map(year, rate):
             lat=dff.lattitude,
             lon=dff.longitude,
             mode="markers",
-            marker=go.scattermapbox.Marker(size=5, color="rgb(160,82,45)", opacity=0.6),
+            marker=go.scattermapbox.Marker(
+                size=dff.population // 200000, color="rgb(160,82,45)", opacity=0.6
+            ),
             text=dff.name,
             hoverinfo="text",
             customdata=dff.elevation,
@@ -137,7 +140,7 @@ def update_map(year, rate):
             lon=dff.longitude,
             mode="markers",
             marker=go.scattermapbox.Marker(
-                size=5, color="rgb(123, 199, 255)", opacity=0.6
+                size=dff.population // 200000, color="rgb(123, 199, 255)", opacity=0.6
             ),
             text=dff.name,
             hoverinfo="text",
