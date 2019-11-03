@@ -7,11 +7,32 @@
     box-shadow: 2px 2px 2px lightgrey;
   }
   
-  .box {
+.box {
     margin: 0 0 0 0;
     padding: 0 0 0 0;
-  }
+}
 
-  .grid {
-      display: grid;
-  }
+.grid {
+    display: grid;
+}
+
+#main_row {
+    display: flex;
+    flex-direction: row;
+}
+
+#controls{
+    flex: 1;
+}
+  
+#main_card {
+    flex: 3;
+}
+
+#sea_level {
+    margin: 0 2rem 3rem 2rem;
+}
+
+#rate_slider {
+    margin-bottom: 3rem;
+}

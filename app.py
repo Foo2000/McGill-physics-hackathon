@@ -22,7 +22,7 @@ layout = dict(
     legend=dict(font=dict(size=10), orientation="h"),
     title="Satellite Overview",
     mapbox=mapbox_layout,
-    margin=dict(l=30, r=30, b=20, t=40),
+    margin=dict(l=30, r=30, b=0, t=40),
     plot_bgcolor="#F9F9F9",
     paper_bgcolor="#F9F9F9",
 )
@@ -39,27 +39,66 @@ print(df.head())
 app.layout = html.Div(
     className="container",
     children=[
-        Header("Walk On Water", app),
+        Header("Noah's Ark", app),
         html.Div(
-            className="grid",
+            id="main_row",
             children=[
                 html.Div(
+                    id="controls",
                     className="card",
-                    children=dcc.Slider(
-                        id="sea_level", min=0, max=1000, step=1, value=0
-                    ),
+                    children=[
+                        html.P(
+                            id="rate_text",
+                            className="control_label",
+                            children="Rate of sea level rise",
+                        ),
+                        dcc.Slider(
+                            id="rate_slider",
+                            min=0.1,
+                            max=10,
+                            step=0.1,
+                            marks={i: str(i) for i in range(1, 11)},
+                            value=0.1,
+                        ),
+                        dcc.Markdown(id="city_info", children="City:"),
+                    ],
                 ),
-                html.Div(className="card", children=dcc.Graph(id="map")),
+                html.Div(
+                    id="main_card",
+                    className="card",
+                    children=[
+                        dcc.Slider(
+                            id="sea_level",
+                            min=2019,
+                            max=3019,
+                            step=1,
+                            value=2019,
+                            marks={
+                                2019: "2019",
+                                2250: "2250",
+                                2500: "2500",
+                                2750: "2750",
+                                3019: "3019",
+                            },
+                        ),
+                        dcc.Graph(id="map"),
+                    ],
+                ),
             ],
         ),
     ],
 )
 
 
-@app.callback(Output("map", "figure"), [Input("sea_level", "value")])
-def update_map(sea_level):
+@app.callback(
+    Output("map", "figure"),
+    [Input("sea_level", "value"), Input("rate_slider", "value")],
+)
+def update_map(year, rate):
+
     figure = go.Figure()
-    dff = df[df.elevation >= int(sea_level)]
+    sea_level = (int(year) - 2019) * float(rate)
+    dff = df[df.elevation >= sea_level]
     figure.add_trace(
         go.Scattermapbox(
             name="Above sea level",
@@ -69,6 +108,7 @@ def update_map(sea_level):
             marker=go.scattermapbox.Marker(size=5, color="rgb(160,82,45)", opacity=0.6),
             text=dff.name,
             hoverinfo="text",
+            customdata=dff.elevation,
         )
     )
 
@@ -84,7 +124,11 @@ def update_map(sea_level):
             ),
             text=dff.name,
             hoverinfo="text",
+            customdata=dff.elevation,
         )
+    )
+    layout["title"] = "Satellite Overview : Year {} (sea level: {:.2f}m)".format(
+        year, sea_level
     )
     # figure = go.Figure(
     #     go.Scattermapbox(
@@ -95,8 +139,39 @@ def update_map(sea_level):
     #         text=df.name,
     #     )
     # )
+
     figure.update_layout(layout)
     return figure
+
+
+@app.callback(
+    Output("city_info", "children"),
+    [
+        Input("sea_level", "value"),
+        Input("map", "clickData"),
+        Input("rate_slider", "value"),
+    ],
+)
+def update_city_info(year, clickData, rate):
+    data = clickData["points"][0]
+    sea_level = (int(year) - 2019) * int(rate)
+    text = """**City: {}** \n
+    Longitude: {} \n
+    Latitude: {} \n
+    Status in {}: {}
+    """.format(
+        data["text"],
+        data["lat"],
+        data["lon"],
+        year,
+        "Submerged" if data["customdata"] < sea_level else "Safe",
+    )
+    return text
+
+
+@app.callback(Output("rate_text", "children"), [Input("rate_slider", "value")])
+def update_rate_text(rate):
+    return "Rate of sea level rise: {} m/y".format(rate)
 
 
 if __name__ == "__main__":
